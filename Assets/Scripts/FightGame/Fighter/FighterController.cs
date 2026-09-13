@@ -15,6 +15,16 @@ namespace FightGame
         [SerializeField] 
         private MonoBehaviour inputSourceBehaviour;
 
+        [Header("攻击 / 受击")]
+        public float hitStun = 0.3f;
+        public Hitbox hitbox;
+
+        [Header("招式")]
+        public AttackMove punchMove = new AttackMove("Punch", 6f, 0.3f);
+        public AttackMove kickMove = new AttackMove("Kick", 12f, 0.45f);
+
+        public float HitStun => hitStun;
+
         public float CurrentHp 
         {
             get; 
@@ -71,7 +81,12 @@ namespace FightGame
 
         private void ApplyMove(FighterInput input)
         {
-            _sm.ChangeState(input.HasMove ? new WalkState() : new IdleState());
+            bool canMove = !(_sm.Current is AttackState) && !(_sm.Current is HitState);
+
+            if (canMove)
+            {
+                _sm.ChangeState(input.HasMove ? new WalkState() : new IdleState());
+            }
 
             Vector3 horizontal = new Vector3(input.x, 0f, input.z);
             if (horizontal.sqrMagnitude > 0.01f)
@@ -79,6 +94,7 @@ namespace FightGame
                 horizontal = horizontal.normalized;
             }
             horizontal *= moveSpeed;
+            if (!canMove) horizontal = Vector3.zero;
 
             if (_cc.isGrounded && _verticalVelocity < 0f)
             {
@@ -89,7 +105,7 @@ namespace FightGame
                 _verticalVelocity += gravity * Time.deltaTime;
             }
                
-            if (input.jump && _cc.isGrounded)
+            if (input.jump && _cc.isGrounded && canMove)
             {
                 _verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
             }
@@ -108,6 +124,68 @@ namespace FightGame
             if (_anim != null)
             {
                 _anim.SetFloat("Speed", s);
+            }
+        }
+
+        public void TryAttack(AttackMove move)
+        {
+            if (_sm == null) return;
+            if (CurrentHp <= 0f) return;
+            if (_sm.Current is AttackState) return;
+            if (_sm.Current is HitState) return;
+            _sm.ChangeState(new AttackState(move));
+        }
+
+        public void EnableHitbox(float damage)
+        {
+            if (hitbox == null) hitbox = GetComponentInChildren<Hitbox>(true);
+            if (hitbox == null) return;
+            if (hitbox.gameObject == gameObject) return;
+            hitbox.owner = this;
+            hitbox.damage = damage;
+            hitbox.gameObject.SetActive(true);
+        }
+
+        public void DisableHitbox()
+        {
+            if (hitbox == null) return;
+            if (hitbox.gameObject == gameObject) return;
+            hitbox.gameObject.SetActive(false);
+        }
+
+        public void ChangeToIdle() => _sm.ChangeState(new IdleState());
+
+        public void TickStateMachine()
+        {
+            if (_sm != null) _sm.Tick();
+        }
+        public void PlayTrigger(string trigger) 
+        { 
+            if (_anim != null)
+            {
+                _anim.SetTrigger(trigger);
+            }
+        }
+        public void PlayHitAnim() 
+        { 
+            if (_anim != null)
+            {
+                _anim.SetTrigger("Hit");
+            }
+        }
+
+        public void TakeDamage(float dmg)
+        {
+            if (CurrentHp <= 0f) return;
+
+            CurrentHp = Mathf.Max(0f, CurrentHp - dmg);
+            Debug.Log($"[Fighter] {name} 受到 {dmg} 伤害，剩余 HP {CurrentHp}");
+
+            _sm.ChangeState(new HitState());
+
+            if (CurrentHp <= 0f)
+            {
+                Debug.Log($"[Fighter] {name} 死亡");
             }
         }
     }

@@ -25,7 +25,7 @@ namespace FightGame
             _current?.Enter(_f);
         }
 
-        void Update() => _current?.Update(_f);
+        public void Tick() => _current?.Update(_f);
     }
 
 
@@ -40,6 +40,57 @@ namespace FightGame
     {
         public void Enter(FighterController f) { f.AnimSpeed(1f); }
         public void Update(FighterController f) { }
+        public void Exit(FighterController f) { }
+    }
+    public class AttackState : IFighterState
+    {
+        private readonly AttackMove _move;
+        private float _t;
+
+        public AttackState(AttackMove move) 
+        { 
+            _move = move;
+        }
+
+        public void Enter(FighterController f) 
+        { 
+            _t = 0f;
+            f.EnableHitbox(_move.damage);
+            f.PlayTrigger(_move.animTrigger);
+            Debug.Log($"[Attack] {f.name} 进入攻击({_move.animTrigger})");
+        }
+        public void Update(FighterController f)
+        {
+            _t += Time.deltaTime;
+            if (_t >= _move.duration) 
+            { 
+                f.DisableHitbox(); 
+                f.ChangeToIdle();
+                Debug.Log($"[Attack] {f.name} 攻击结束 → Idle");
+            }
+        }
+        public void Exit(FighterController f) 
+        { 
+            f.DisableHitbox(); 
+        }
+    }
+
+    public class HitState : IFighterState
+    {
+        private float _t;
+        public void Enter(FighterController f) 
+        { 
+            _t = 0f; f.PlayHitAnim(); Debug.Log($"[Hit] {f.name} 进入硬直");
+        }
+        public void Update(FighterController f)
+        {
+            _t += Time.deltaTime;
+            if (_t >= f.HitStun)
+            {
+                 f.ChangeToIdle();
+                 Debug.Log($"[Hit] {f.name} 硬直结束 → Idle");
+            }
+        }
         public void Exit(FighterController f) { }
     }
 }
