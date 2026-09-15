@@ -41,6 +41,8 @@ namespace FightGame
                 _controller.TryAttack(_controller.kickMove);
             }
 
+            _controller.RequestBlock(input.block);
+
             _controller.TickStateMachine();
         }
     }

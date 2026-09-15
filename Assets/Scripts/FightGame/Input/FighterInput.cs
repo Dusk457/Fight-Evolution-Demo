@@ -5,7 +5,8 @@ namespace FightGame
     {
         public float x;
         public float z;
-        public bool attack; 
+        public bool punch;
+        public bool kick;
         public bool block;
         public bool jump;
 

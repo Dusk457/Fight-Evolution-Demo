@@ -10,7 +10,7 @@ namespace FightGame
 
         private readonly HashSet<FighterController> _hitOnce = new HashSet<FighterController>();
 
-        void OnEnable() => _hitOnce.Clear();
+        public void ResetHits() => _hitOnce.Clear();
 
         void OnTriggerEnter(Collider other)
         {

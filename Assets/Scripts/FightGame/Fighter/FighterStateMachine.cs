@@ -46,6 +46,7 @@ namespace FightGame
     {
         private readonly AttackMove _move;
         private float _t;
+        private float _duration;
 
         public AttackState(AttackMove move) 
         { 
@@ -55,14 +56,22 @@ namespace FightGame
         public void Enter(FighterController f) 
         { 
             _t = 0f;
-            f.EnableHitbox(_move.damage);
+            _duration = _move.duration > 0f ? _move.duration : f.GetClipLength(_move.animTrigger);
+            if (_duration <= 0f)
+            {
+                _duration = 0.3f;
+            }
+
+            f.SetCurrentMove(_move);
+            f.ResetHitboxHits();
             f.PlayTrigger(_move.animTrigger);
-            Debug.Log($"[Attack] {f.name} 进入攻击({_move.animTrigger})");
+
+            Debug.Log($"[Attack] {f.name} 进入攻击({_move.animTrigger}) 时长={_duration:F2}s 命中框=AnimationEvent");
         }
         public void Update(FighterController f)
         {
             _t += Time.deltaTime;
-            if (_t >= _move.duration) 
+            if (_t >= _duration) 
             { 
                 f.DisableHitbox(); 
                 f.ChangeToIdle();
@@ -87,10 +96,36 @@ namespace FightGame
             _t += Time.deltaTime;
             if (_t >= f.HitStun)
             {
-                 f.ChangeToIdle();
-                 Debug.Log($"[Hit] {f.name} 硬直结束 → Idle");
+                 f.OnHitStunEnd();
+                 Debug.Log($"[Hit] {f.name} 硬直结束");
             }
         }
+        public void Exit(FighterController f) { }
+    }
+
+    public class BlockState : IFighterState
+    {
+        public void Enter(FighterController f)
+        {
+            f.SetBlockingFlag(true);
+            Debug.Log($"[Block] {f.name} 进入格挡");
+        }
+        public void Update(FighterController f) { }
+        public void Exit(FighterController f)
+        {
+            f.SetBlockingFlag(false);
+            Debug.Log($"[Block] {f.name} 解除格挡");
+        }
+    }
+
+    public class DeadState : IFighterState
+    {
+        public void Enter(FighterController f)
+        {
+            f.SetDeadFlag(true);
+            Debug.Log($"[Dead] {f.name} 死亡");
+        }
+        public void Update(FighterController f) { }
         public void Exit(FighterController f) { }
     }
 }

@@ -9,11 +9,14 @@ namespace FightGame
         public float damage;
         public float duration;
 
+        public string hitboxName;
+
         public AttackMove(string animTrigger, float damage, float duration)
         {
             this.animTrigger = animTrigger;
             this.damage = damage;
             this.duration = duration;
+            this.hitboxName = "";
         }
     }
 }
